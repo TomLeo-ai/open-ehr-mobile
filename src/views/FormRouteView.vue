@@ -1,5 +1,5 @@
 <template>
-  <DemoFormPage
+  <FormPage
     :title="form.title"
     :summary="modeSummary"
     :status="statusText"
@@ -14,15 +14,16 @@
     :attachments="form.attachments"
     @feedback="showToast"
   />
-  <DemoToast :message="toastMessage" />
+  <ToastMessage :message="toastMessage" />
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import DemoFormPage from '@/components/DemoFormPage.vue';
-import DemoToast from '@/components/DemoToast.vue';
+import { computed } from 'vue';
+import FormPage from '@/components/FormPage.vue';
+import ToastMessage from '@/components/ToastMessage.vue';
+import { useToastMessage } from '@/composables/useToastMessage';
 import { applicationForms } from '@/data/mock';
-import type { DemoSection } from '@/data/types';
+import type { FormSection } from '@/data/types';
 
 const props = defineProps({
   formKey: {
@@ -43,7 +44,7 @@ const normalizedMode = computed<'add' | 'detail' | 'reissue'>(() => {
   return 'add';
 });
 
-const sections = computed<DemoSection[]>(() => {
+const sections = computed<FormSection[]>(() => {
   return form.value.sections.map((section) => ({
     ...section,
     fields: section.fields.map((field) => ({
@@ -72,14 +73,5 @@ const modeSummary = computed(() => {
   return `${prefix}${form.value.summary}`;
 });
 
-const toastMessage = ref('');
-let timer: number | undefined;
-
-const showToast = (message: string) => {
-  toastMessage.value = message;
-  window.clearTimeout(timer);
-  timer = window.setTimeout(() => {
-    toastMessage.value = '';
-  }, 2200);
-};
+const { toastMessage, showToast } = useToastMessage();
 </script>

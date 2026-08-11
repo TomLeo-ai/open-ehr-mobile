@@ -1,17 +1,17 @@
 <template>
-  <DemoShell title="Open EHR Mobile" subtitle="移动端 EHR 开源演示" :with-tabbar="false">
+  <AppShell title="Open EHR Mobile" subtitle="企业 HR 开源前端模板" :with-tabbar="false">
     <section class="login-view demo-card">
-      <p class="login-view__eyebrow">Open EHR Mobile Demo</p>
+      <p class="login-view__eyebrow">Open EHR Mobile</p>
       <h1>企业移动员工服务</h1>
       <p>已准备员工、审批、申请和自助查询数据，适合快速查看移动端页面范围与交互体验。</p>
       <button class="demo-primary-button" type="button" @click="$router.push('/home')">进入系统</button>
       <button class="demo-secondary-button" type="button" @click="$router.push('/self-service')">查看自助服务</button>
     </section>
-  </DemoShell>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
-import DemoShell from '@/components/DemoShell.vue';
+import AppShell from '@/components/AppShell.vue';
 </script>
 
 <style scoped>

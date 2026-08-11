@@ -1,34 +1,34 @@
 <template>
-  <DemoShell :title="title" :subtitle="subtitle" show-back :with-tabbar="false">
-    <section class="demo-form-page__hero demo-card">
+  <AppShell :title="title" :subtitle="subtitle" show-back :with-tabbar="false">
+    <section class="form-page__hero demo-card">
       <div>
-        <p class="demo-form-page__eyebrow">{{ eyebrow }}</p>
+        <p class="form-page__eyebrow">{{ eyebrow }}</p>
         <h2>{{ title }}</h2>
         <p>{{ summary }}</p>
       </div>
       <span class="demo-tag" :class="statusClass">{{ status }}</span>
     </section>
 
-    <section class="demo-form-page__status demo-card">
+    <section class="form-page__status demo-card">
       <div v-for="item in statusItems" :key="item.label">
         <span>{{ item.label }}</span>
         <strong>{{ item.value }}</strong>
       </div>
     </section>
 
-    <nav v-if="modeLinks.length" class="demo-form-page__modes demo-card" aria-label="表单状态演示">
+    <nav v-if="modeLinks.length" class="form-page__modes demo-card" aria-label="表单状态演示">
       <RouterLink
         v-for="link in modeLinks"
         :key="link.path"
         :to="link.path"
-        class="demo-form-page__mode"
-        :class="{ 'demo-form-page__mode--active': link.mode === mode }"
+        class="form-page__mode"
+        :class="{ 'form-page__mode--active': link.mode === mode }"
       >
         {{ link.label }}
       </RouterLink>
     </nav>
 
-    <DemoBlocks
+    <SectionBlock
       v-for="section in sections"
       :key="section.title"
       :title="section.title"
@@ -37,39 +37,50 @@
       <template #extra>
         <span v-if="section.badge" class="demo-tag demo-tag--neutral">{{ section.badge }}</span>
       </template>
-      <div class="demo-form-page__fields">
-        <label
+      <div class="form-page__fields">
+        <div
           v-for="field in section.fields"
           :key="field.label"
-          class="demo-form-page__field"
-          :class="{ 'demo-form-page__field--readonly': field.readonly }"
+          class="form-page__field"
+          :class="{ 'form-page__field--readonly': field.readonly }"
         >
-          <span class="demo-form-page__label">
+          <span class="form-page__label">
             {{ field.label }}
             <b v-if="field.required">*</b>
           </span>
           <textarea
             v-if="field.type === 'textarea'"
             v-model="field.value"
+            :aria-label="field.label"
             :readonly="field.readonly"
             rows="3"
           />
-          <select v-else-if="field.type === 'select'" v-model="field.value" :disabled="field.readonly">
+          <select v-else-if="field.type === 'select'" v-model="field.value" :aria-label="field.label" :disabled="field.readonly">
             <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
           </select>
-          <input v-else v-model="field.value" :readonly="field.readonly" :type="inputType(field.type)" />
+          <button
+            v-else-if="field.type === 'attachment'"
+            class="form-page__field-attachment"
+            type="button"
+            :aria-label="`预览${field.label}：${field.value}`"
+            @click="emitFeedback(`预览附件：${field.value}`)"
+          >
+            <Paperclip class="form-page__svg" aria-hidden="true" :size="18" :stroke-width="2.1" />
+            <span>{{ field.value }}</span>
+          </button>
+          <input v-else v-model="field.value" :aria-label="field.label" :readonly="field.readonly" :type="inputType(field.type)" />
           <small v-if="field.helper">{{ field.helper }}</small>
-        </label>
+        </div>
       </div>
-    </DemoBlocks>
+    </SectionBlock>
 
-    <DemoBlocks title="附件材料" desc="展示已上传材料、审核状态和预览入口。">
-      <div class="demo-form-page__attachments">
+    <SectionBlock title="附件材料" desc="展示已上传材料、审核状态和预览入口。">
+      <div class="form-page__attachments">
         <button
           v-for="file in attachments"
           :key="file.name"
           :aria-label="`预览附件：${file.name}`"
-          class="demo-form-page__attachment"
+          class="form-page__attachment"
           type="button"
           @click="emitFeedback(`预览附件：${file.name}`)"
         >
@@ -80,9 +91,9 @@
           <span class="demo-tag demo-tag--success">{{ file.status }}</span>
         </button>
       </div>
-    </DemoBlocks>
+    </SectionBlock>
 
-    <div class="demo-form-page__actions">
+    <div class="form-page__actions">
       <button
         v-if="mode !== 'detail'"
         class="demo-secondary-button"
@@ -99,17 +110,18 @@
         {{ mode === 'detail' ? '预览材料' : '提交申请' }}
       </button>
     </div>
-  </DemoShell>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
+import { Paperclip } from '@lucide/vue';
 import { computed, type PropType } from 'vue';
 import { RouterLink } from 'vue-router';
-import DemoBlocks from '@/components/DemoBlocks.vue';
-import DemoShell from '@/components/DemoShell.vue';
-import type { DemoAttachment, DemoModeLink, DemoSection, DemoTone } from '@/data/types';
+import SectionBlock from '@/components/SectionBlock.vue';
+import AppShell from '@/components/AppShell.vue';
+import type { AttachmentItem, FormModeLink, FormSection, Tone } from '@/data/types';
 
-defineOptions({ name: 'DemoFormPage' });
+defineOptions({ name: 'FormPage' });
 
 const props = defineProps({
   title: {
@@ -138,7 +150,7 @@ const props = defineProps({
   },
   processNo: {
     type: String,
-    default: 'DEMO-20260601-001',
+    default: 'PROC-20260601-001',
   },
   currentNode: {
     type: String,
@@ -153,19 +165,19 @@ const props = defineProps({
     default: 'add',
   },
   modeLinks: {
-    type: Array as PropType<DemoModeLink[]>,
+    type: Array as PropType<FormModeLink[]>,
     default: () => [],
   },
   tone: {
-    type: String as PropType<DemoTone>,
+    type: String as PropType<Tone>,
     default: 'primary',
   },
   sections: {
-    type: Array as PropType<DemoSection[]>,
+    type: Array as PropType<FormSection[]>,
     required: true,
   },
   attachments: {
-    type: Array as PropType<DemoAttachment[]>,
+    type: Array as PropType<AttachmentItem[]>,
     default: () => [],
   },
 });
@@ -277,105 +289,129 @@ const handlePrimaryAction = () => {
 </script>
 
 <style scoped>
-.demo-form-page__hero {
+.form-page__hero {
   display: flex;
   min-width: 0;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--demo-space-3);
-  padding: var(--demo-space-4);
-  background: linear-gradient(180deg, rgba(236, 244, 255, 0.9), #ffffff);
+  gap: var(--ehr-space-3);
+  overflow: hidden;
+  padding: var(--ehr-space-5);
+  color: #ffffff;
+  background: var(--ehr-bg-hero);
+  box-shadow: var(--ehr-shadow-lg);
 }
 
-.demo-form-page__eyebrow {
+.form-page__eyebrow {
   margin: 0;
-  color: var(--demo-color-primary-dark);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 850;
+  text-transform: uppercase;
 }
 
-.demo-form-page__hero h2 {
+.form-page__hero h2 {
   margin: 3px 0 0;
-  color: var(--demo-color-text);
+  color: #ffffff;
   font-size: 20px;
   line-height: 1.35;
 }
 
-.demo-form-page__hero p:last-child {
+.form-page__hero p:last-child {
   margin: 6px 0 0;
-  color: var(--demo-color-text-secondary);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 13px;
+  line-height: 1.45;
 }
 
-.demo-form-page__status {
+.form-page__hero .demo-tag {
+  align-self: start;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.form-page__status {
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--demo-space-3);
-  padding: var(--demo-space-4);
+  gap: var(--ehr-space-3);
+  border: 1px solid rgba(214, 226, 223, 0.78);
+  padding: var(--ehr-space-4);
 }
 
-.demo-form-page__status span,
-.demo-form-page__status strong {
+.form-page__status span,
+.form-page__status strong {
   overflow-wrap: anywhere;
   display: block;
 }
 
-.demo-form-page__status span {
-  color: var(--demo-color-text-tertiary);
+.form-page__status span {
+  color: var(--ehr-color-ink-muted);
   font-size: 12px;
 }
 
-.demo-form-page__status strong {
+.form-page__status strong {
   margin-top: 2px;
-  color: var(--demo-color-text);
+  color: var(--ehr-color-ink);
   font-size: 13px;
+  font-weight: 800;
   line-height: 1.35;
 }
 
-.demo-form-page__modes {
+.form-page__modes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--demo-space-2);
-  padding: var(--demo-space-2);
+  gap: var(--ehr-space-2);
+  border: 1px solid rgba(214, 226, 223, 0.78);
+  padding: var(--ehr-space-2);
 }
 
-.demo-form-page__mode {
+.form-page__mode {
   display: inline-flex;
   min-height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: var(--demo-radius-md);
-  color: var(--demo-color-text-secondary);
+  border-radius: var(--ehr-radius-md);
+  color: var(--ehr-color-ink-muted);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 750;
+  transition: background-color var(--ehr-motion-fast), color var(--ehr-motion-fast), box-shadow var(--ehr-motion-fast);
 }
 
-.demo-form-page__mode--active {
-  color: var(--demo-color-primary-dark);
-  background: var(--demo-color-primary-soft);
+.form-page__mode:focus-visible {
+  outline: none;
+  box-shadow: var(--ehr-focus-ring);
 }
 
-.demo-form-page__fields {
+.form-page__mode--active {
+  color: var(--ehr-color-primary-strong);
+  background: var(--ehr-color-primary-soft);
+}
+
+.form-page__fields {
   display: grid;
   min-width: 0;
-  gap: var(--demo-space-3);
+  gap: var(--ehr-space-3);
 }
 
-.demo-form-page__field {
+.form-page__field {
   display: grid;
   min-width: 0;
   gap: 6px;
+  border: 1px solid rgba(214, 226, 223, 0.74);
+  border-radius: var(--ehr-radius-lg);
+  background: var(--ehr-color-surface-raised);
+  padding: var(--ehr-space-3);
 }
 
-.demo-form-page__label {
-  color: var(--demo-color-text-secondary);
+.form-page__label {
+  color: var(--ehr-color-ink-soft);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
 }
 
-.demo-form-page__label b {
-  color: #a95650;
+.form-page__label b {
+  color: var(--ehr-color-error);
 }
 
 input,
@@ -383,13 +419,14 @@ select,
 textarea {
   min-width: 0;
   width: 100%;
-  border: 1px solid transparent;
-  border-radius: var(--demo-radius-md);
-  color: var(--demo-color-text);
-  background: var(--demo-color-surface-inset);
+  border: 1px solid var(--ehr-color-border);
+  border-radius: var(--ehr-radius-md);
+  color: var(--ehr-color-ink);
+  background: var(--ehr-color-surface-muted);
   padding: 12px;
   outline: none;
   font-size: 15px;
+  transition: border-color var(--ehr-motion-fast), background-color var(--ehr-motion-fast), box-shadow var(--ehr-motion-fast);
 }
 
 textarea {
@@ -399,71 +436,114 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--demo-color-primary);
-  background: #fff;
+  border-color: var(--ehr-color-primary);
+  background: #ffffff;
+  box-shadow: var(--ehr-focus-ring);
 }
 
-.demo-form-page__field--readonly input,
-.demo-form-page__field--readonly select,
-.demo-form-page__field--readonly textarea {
-  color: var(--demo-color-text-secondary);
-  background: var(--demo-color-surface-muted);
+.form-page__field-attachment {
+  display: grid;
+  width: 100%;
+  min-height: 48px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ehr-space-2);
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: var(--ehr-radius-md);
+  color: var(--ehr-color-primary-strong);
+  background: var(--ehr-color-primary-soft);
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.form-page__field-attachment span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-page__field-attachment:active {
+  transform: scale(0.985);
+}
+
+.form-page__field-attachment:focus-visible {
+  border-color: var(--ehr-color-primary);
+  outline: none;
+  box-shadow: var(--ehr-focus-ring);
+}
+
+.form-page__field--readonly input,
+.form-page__field--readonly select,
+.form-page__field--readonly textarea {
+  color: var(--ehr-color-ink-soft);
+  background: var(--ehr-color-neutral-soft);
 }
 
 small {
-  color: var(--demo-color-text-tertiary);
+  color: var(--ehr-color-ink-muted);
   font-size: 12px;
 }
 
-.demo-form-page__attachments {
+.form-page__attachments {
   display: grid;
   min-width: 0;
-  gap: var(--demo-space-3);
+  gap: var(--ehr-space-3);
 }
 
-.demo-form-page__attachment {
+.form-page__attachment {
   display: flex;
   min-width: 0;
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: var(--demo-space-3);
-  border: 0;
-  border-radius: var(--demo-radius-md);
-  background: var(--demo-color-surface-muted);
-  padding: var(--demo-space-3);
+  gap: var(--ehr-space-3);
+  border: 1px solid rgba(214, 226, 223, 0.76);
+  border-radius: var(--ehr-radius-lg);
+  background: var(--ehr-color-surface-raised);
+  padding: var(--ehr-space-3);
   color: inherit;
   cursor: pointer;
   font: inherit;
   text-align: left;
 }
 
-.demo-form-page__attachment:active {
-  background: var(--demo-color-primary-soft);
+.form-page__attachment:active {
+  background: var(--ehr-color-primary-soft);
 }
 
-.demo-form-page__attachment:focus-visible {
-  outline: 2px solid var(--demo-color-primary);
-  outline-offset: 2px;
+.form-page__attachment:focus-visible {
+  outline: none;
+  box-shadow: var(--ehr-focus-ring);
 }
 
-.demo-form-page__attachment strong,
-.demo-form-page__attachment span {
+.form-page__attachment strong,
+.form-page__attachment span {
   display: block;
   overflow-wrap: anywhere;
 }
 
-.demo-form-page__attachment strong {
-  color: var(--demo-color-text);
+.form-page__attachment strong {
+  color: var(--ehr-color-ink);
   font-size: 14px;
+  font-weight: 800;
 }
 
-.demo-form-page__attachment div span {
-  color: var(--demo-color-text-tertiary);
+.form-page__attachment div span {
+  color: var(--ehr-color-ink-muted);
   font-size: 12px;
 }
 
-.demo-form-page__actions {
+.form-page__svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.form-page__actions {
   position: fixed;
   z-index: 100;
   bottom: 0;
@@ -472,14 +552,16 @@ small {
   width: 100%;
   max-width: 430px;
   grid-template-columns: 1fr 1.4fr;
-  gap: var(--demo-space-3);
+  gap: var(--ehr-space-3);
   transform: translateX(-50%);
+  border-top: 1px solid rgba(214, 226, 223, 0.86);
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 -2px 8px rgba(107, 140, 174, 0.08);
-  padding: var(--demo-space-3) var(--demo-space-4) calc(var(--demo-safe-bottom) + var(--demo-space-3));
+  box-shadow: 0 -14px 32px rgba(18, 35, 41, 0.12);
+  backdrop-filter: blur(18px);
+  padding: var(--ehr-space-3) var(--ehr-space-4) calc(var(--ehr-safe-bottom) + var(--ehr-space-3));
 }
 
-.demo-form-page__actions .demo-primary-button:only-child {
+.form-page__actions .demo-primary-button:only-child {
   grid-column: 1 / -1;
 }
 </style>

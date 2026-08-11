@@ -1,5 +1,5 @@
 <template>
-  <DemoShell title="业务地图" subtitle="移动端服务导览" show-back :with-tabbar="false">
+  <AppShell title="业务地图" subtitle="移动端服务导览" show-back :with-tabbar="false">
     <section class="demo-checklist__hero demo-card">
       <p>Service Map</p>
       <h1>按业务路径查看移动端功能</h1>
@@ -8,7 +8,7 @@
 
     <section class="demo-checklist__summary">
       <article class="demo-card">
-        <strong>{{ demoChecklist.length }}</strong>
+        <strong>{{ businessGuideItems.length }}</strong>
         <span>关键页面</span>
       </article>
       <article class="demo-card">
@@ -21,10 +21,10 @@
       </article>
     </section>
 
-    <DemoBlocks title="推荐演示路径" desc="从首页进入，依次覆盖申请、审批、自助三条主线。">
+    <SectionBlock title="推荐演示路径" desc="从首页进入，依次覆盖申请、审批、自助三条主线。">
       <div class="demo-checklist__steps">
         <RouterLink
-          v-for="item in demoChecklist"
+          v-for="item in businessGuideItems"
           :key="item.path"
           class="demo-checklist__item"
           :to="item.path"
@@ -37,32 +37,32 @@
           <b class="demo-tag" :class="tagClass(item.tone)">{{ item.status }}</b>
         </RouterLink>
       </div>
-    </DemoBlocks>
+    </SectionBlock>
 
-    <DemoBlocks title="功能范围" desc="移动端页面按员工日常办理路径组织。">
+    <SectionBlock title="功能范围" desc="移动端页面按员工日常办理路径组织。">
       <ul class="demo-checklist__rules">
         <li>首页展示员工身份、待办统计、快捷入口和公告提醒。</li>
         <li>申请中心支持新增、详情查看和重新发起。</li>
         <li>审批中心覆盖待办、已办、我的流程和草稿。</li>
         <li>自助查询覆盖档案、薪资、考勤、休假、撤回、绩效和联系人。</li>
       </ul>
-    </DemoBlocks>
-  </DemoShell>
+    </SectionBlock>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import DemoBlocks from '@/components/DemoBlocks.vue';
-import DemoShell from '@/components/DemoShell.vue';
-import { demoChecklist } from '@/data/mock';
-import type { DemoTone } from '@/data/types';
+import SectionBlock from '@/components/SectionBlock.vue';
+import AppShell from '@/components/AppShell.vue';
+import { businessGuideItems } from '@/data/mock';
+import type { Tone } from '@/data/types';
 
-defineOptions({ name: 'DemoChecklistView' });
+defineOptions({ name: 'ChecklistView' });
 
-const passedCount = computed(() => demoChecklist.filter((item) => item.status === '已验收').length);
-const focusCount = computed(() => demoChecklist.filter((item) => item.status === '重点演示').length);
+const passedCount = computed(() => businessGuideItems.filter((item) => item.status === '已验收').length);
+const focusCount = computed(() => businessGuideItems.filter((item) => item.status === '重点演示').length);
 
-const tagClass = (tone: DemoTone) => {
+const tagClass = (tone: Tone) => {
   if (tone === 'success') return 'demo-tag--success';
   if (tone === 'warning') return 'demo-tag--warning';
   if (tone === 'error') return 'demo-tag--error';

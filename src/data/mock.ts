@@ -1,4 +1,12 @@
-import type { DemoApplicationForm, DemoAttachment, DemoChecklistItem, DemoListItem, DemoSection, DemoTimelineItem } from './types';
+import type {
+  ApplicationForm,
+  ApprovalDetailState,
+  ApprovalListItem,
+  AttachmentItem,
+  ChecklistItem,
+  FormSection,
+  TimelineItem,
+} from './types';
 
 export const employeeProfile = {
   name: '陈晓宁',
@@ -49,7 +57,7 @@ export const notices = [
   },
 ];
 
-export const demoChecklist: DemoChecklistItem[] = [
+export const businessGuideItems: ChecklistItem[] = [
   {
     title: '首页工作台',
     path: '/home',
@@ -131,7 +139,7 @@ export const approvalTabs = [
   { key: 'draft', label: '草稿', path: '/approval/draft' },
 ];
 
-export const approvals: Record<string, DemoListItem[]> = {
+export const approvals: Record<string, ApprovalListItem[]> = {
   todo: [
     {
       id: 'todo-001',
@@ -230,7 +238,7 @@ export const approvals: Record<string, DemoListItem[]> = {
   ],
 };
 
-export const approvalDetail = {
+export const approvalDetail: ApprovalDetailState = {
   title: '考勤异常申请审批',
   status: '待审批',
   applicant: '周思远',
@@ -248,12 +256,12 @@ export const approvalDetail = {
   attachments: [
     { name: '项目现场会议签到截图.png', size: '428KB', status: '可预览' },
     { name: '项目经理情况说明.pdf', size: '860KB', status: '可预览' },
-  ] satisfies DemoAttachment[],
+  ] satisfies AttachmentItem[],
   timeline: [
     { title: '发起申请', desc: '周思远提交考勤异常申请', time: '2026-05-14 09:10', status: '已完成', tone: 'success' },
     { title: '部门负责人审批', desc: '等待当前审批人处理', time: '2026-05-15 09:20', status: '审批中', tone: 'warning' },
     { title: 'HR 考勤岗复核', desc: '通过后进入考勤月结记录', time: '预计下一节点', status: '待流转', tone: 'neutral' },
-  ] satisfies DemoTimelineItem[],
+  ] satisfies TimelineItem[],
 };
 
 const baseEmployeeFields = [
@@ -263,9 +271,9 @@ const baseEmployeeFields = [
   { label: '部门名称', key: 'deptName', value: '人力资源共享服务中心', readonly: true },
   { label: '入职日期', key: 'joindate', value: '2021-07-12', type: 'date', readonly: true },
   { label: '身份证号', key: 'idCard', value: '310***********2648', readonly: true },
-] satisfies DemoSection['fields'];
+] satisfies FormSection['fields'];
 
-export const applicationForms: Record<string, DemoApplicationForm> = {
+export const applicationForms: Record<string, ApplicationForm> = {
   onJob: {
     title: '在职/收入证明申请',
     summary: '按员工信息、申请信息、开具与签收、附件材料分组展示。',
@@ -573,6 +581,178 @@ export const applicationForms: Record<string, DemoApplicationForm> = {
       { name: '履行竞业限制义务通知函.pdf', size: '待确认', status: '条件材料', desc: '启动竞业限制时展示。' },
     ],
   },
+};
+
+type ApprovalDetailOverrides = Partial<
+  Pick<ApprovalDetailState, 'title' | 'status' | 'applicant' | 'node' | 'attachments' | 'timeline'>
+> & {
+  processNo?: string;
+  type?: string;
+  applicantDetail?: string;
+  extraFields?: ApprovalDetailState['fields'];
+};
+
+const createApprovalTimeline = (
+  title: string,
+  applicant: string,
+  node: string,
+  status: string,
+  tone: TimelineItem['tone'],
+): TimelineItem[] => [
+  {
+    title: '发起申请',
+    desc: `${applicant} 提交${title.replace(/草稿$/, '')}`,
+    time: '2026-05-12 09:10',
+    status: '已完成',
+    tone: 'success',
+  },
+  {
+    title: node,
+    desc: `当前状态：${status}`,
+    time: '2026-05-15 09:20',
+    status,
+    tone,
+  },
+  {
+    title: '后续节点',
+    desc: '纯前端 mock 演示流程轨迹，不连接真实审批引擎。',
+    time: '示例流程',
+    status: 'Mock',
+    tone: 'neutral',
+  },
+];
+
+const createApprovalDetailFromForm = (
+  form: ApplicationForm,
+  overrides: ApprovalDetailOverrides = {},
+): ApprovalDetailState => {
+  const title = overrides.title ?? form.title;
+  const applicant = overrides.applicant ?? form.applicant.split('/')[0]?.trim() ?? form.applicant;
+  const node = overrides.node ?? form.currentNode;
+  const status = overrides.status ?? form.status;
+  const type = overrides.type ?? form.title.replace(/草稿$/, '');
+  const processNo = overrides.processNo ?? form.processNo;
+  const formFields = form.sections
+    .flatMap((section) => section.fields)
+    .filter((field) => !['流程编号', '申请类型', '申请人', '当前节点'].includes(field.label))
+    .slice(0, 6)
+    .map((field) => ({
+      label: field.label,
+      value: field.value,
+      required: field.required,
+      helper: field.helper,
+    }));
+
+  return {
+    title,
+    status,
+    applicant,
+    node,
+    fields: [
+      { label: '流程编号', value: processNo },
+      { label: '申请类型', value: type },
+      { label: '申请人', value: overrides.applicantDetail ?? form.applicant },
+      { label: '当前节点', value: node },
+      ...(overrides.extraFields ?? formFields),
+    ],
+    attachments: overrides.attachments ?? form.attachments,
+    timeline: overrides.timeline ?? createApprovalTimeline(title, applicant, node, status, form.tone),
+  };
+};
+
+export const approvalDetails: Record<string, ApprovalDetailState> = {
+  'todo-001': approvalDetail,
+  'todo-002': createApprovalDetailFromForm(applicationForms.recommend, {
+    title: '内部推荐奖励申请',
+    applicant: '陈依凡',
+    applicantDetail: '陈依凡 / EMP0008',
+    status: '待复核',
+    node: '薪酬复核',
+  }),
+  'todo-003': createApprovalDetailFromForm(applicationForms.settle, {
+    title: '居住证积分办理申请',
+    applicant: '郑浩宇',
+    applicantDetail: '郑浩宇 / EMP0011',
+    status: '待初审',
+    node: 'HR 初审',
+  }),
+  'done-001': createApprovalDetailFromForm(applicationForms.onJob, {
+    title: '在职/收入证明申请',
+    applicant: '李欣妍',
+    applicantDetail: '李欣妍 / EMP0015',
+    status: '已通过',
+    node: '流程已完成',
+    timeline: [
+      { title: '发起申请', desc: '李欣妍提交在职/收入证明申请', time: '2026-05-13 09:30', status: '已完成', tone: 'success' },
+      { title: '证明开具', desc: 'HR 已完成电子版证明开具', time: '2026-05-14 14:30', status: '已通过', tone: 'success' },
+      { title: '材料寄送', desc: '纸质盖章件由前台寄出', time: '2026-05-14 16:00', status: '已处理', tone: 'success' },
+    ],
+  }),
+  'done-002': createApprovalDetailFromForm(applicationForms.resignation, {
+    title: '离职申请',
+    applicant: '唐沐辰',
+    applicantDetail: '唐沐辰 / EMP0019',
+    status: '已处理',
+    node: 'HR 归档',
+  }),
+  'done-003': {
+    title: '异常申请撤回',
+    status: '已驳回',
+    applicant: '谢可欣',
+    node: '申请人补充说明',
+    fields: [
+      { label: '流程编号', value: 'CANCEL-20260601-003' },
+      { label: '申请类型', value: '异常申请撤回' },
+      { label: '申请人', value: '谢可欣 / EMP0022' },
+      { label: '原申请', value: '04-21 迟到说明' },
+      { label: '撤回原因', value: '原申请记录与撤回说明不匹配，需重新补充材料。' },
+    ],
+    attachments: [
+      { name: '撤回原因说明.pdf', size: '220KB', status: '可预览' },
+    ],
+    timeline: [
+      { title: '发起撤回', desc: '谢可欣提交异常撤回申请', time: '2026-05-12 09:40', status: '已完成', tone: 'success' },
+      { title: 'HR 复核', desc: '撤回原因与原申请记录不匹配', time: '2026-05-12 10:18', status: '已驳回', tone: 'error' },
+      { title: '申请人补充', desc: '等待申请人补充说明后重新提交', time: '示例流程', status: '待补充', tone: 'warning' },
+    ],
+  },
+  'process-001': createApprovalDetailFromForm(applicationForms.settle, {
+    title: '示例市居住证积分办理申请',
+    applicant: '陈晓宁',
+    applicantDetail: '陈晓宁 / EMP0001',
+    status: '审批中',
+    node: '人事经理审批',
+  }),
+  'process-002': createApprovalDetailFromForm(applicationForms.onJob, {
+    title: '薪资证明申请',
+    processNo: 'CERT-20260601-002',
+    applicant: '陈晓宁',
+    applicantDetail: '陈晓宁 / EMP0001',
+    status: '流转中',
+    node: '证明开具',
+    type: '薪资证明申请',
+  }),
+  'process-003': createApprovalDetailFromForm(applicationForms.attendance, {
+    title: '考勤异常申请',
+    applicant: '陈晓宁',
+    applicantDetail: '陈晓宁 / EMP0001',
+    status: '审批中',
+    node: 'HR 审核',
+  }),
+  'draft-001': createApprovalDetailFromForm(applicationForms.resignation, {
+    title: '离职申请草稿',
+    applicant: '陈晓宁',
+    applicantDetail: '陈晓宁 / EMP0001',
+    status: '可继续编辑',
+    node: '申请人填写',
+  }),
+  'draft-002': createApprovalDetailFromForm(applicationForms.recommend, {
+    title: '内部推荐奖励草稿',
+    applicant: '陈晓宁',
+    applicantDetail: '陈晓宁 / EMP0001',
+    status: '草稿',
+    node: '申请人填写',
+  }),
 };
 
 export const selfServiceEntries = [

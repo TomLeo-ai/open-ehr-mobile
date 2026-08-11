@@ -1,6 +1,6 @@
 <template>
-  <button class="demo-list-card demo-card" type="button">
-    <div class="demo-list-card__main">
+  <button class="list-card demo-card" type="button">
+    <div class="list-card__main">
       <h3>{{ title }}</h3>
       <p>{{ desc }}</p>
       <small>{{ meta }}</small>
@@ -11,9 +11,9 @@
 
 <script setup lang="ts">
 import { computed, type PropType } from 'vue';
-import type { DemoTone } from '@/data/types';
+import type { Tone } from '@/data/types';
 
-defineOptions({ name: 'DemoListCard' });
+defineOptions({ name: 'ListCard' });
 
 const props = defineProps({
   title: {
@@ -33,7 +33,7 @@ const props = defineProps({
     required: true,
   },
   tone: {
-    type: String as PropType<DemoTone>,
+    type: String as PropType<Tone>,
     default: 'primary',
   },
 });
@@ -53,7 +53,7 @@ const toneClass = computed(() => {
 </script>
 
 <style scoped>
-.demo-list-card {
+.list-card {
   display: flex;
   width: 100%;
   align-items: flex-start;
@@ -64,12 +64,12 @@ const toneClass = computed(() => {
   transition: transform 0.18s ease, background-color 0.18s ease;
 }
 
-.demo-list-card:active {
+.list-card:active {
   transform: scale(0.985);
   background: var(--demo-color-surface-muted);
 }
 
-.demo-list-card__main {
+.list-card__main {
   min-width: 0;
 }
 

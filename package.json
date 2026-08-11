@@ -1,7 +1,7 @@
 {
   "name": "open-ehr-mobile",
   "version": "0.1.0",
-  "description": "A pure frontend mobile EHR demo app built with Vue 3, Vite, TypeScript, and mock data.",
+  "description": "A pure frontend mobile Enterprise HR template built with Vue 3, Vite, TypeScript, and mock data.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -10,9 +10,11 @@
     "preview": "vite preview --host 0.0.0.0 --port 4180",
     "type-check": "vue-tsc --noEmit -p tsconfig.json",
     "verify:oss": "node scripts/verify-open-source.mjs",
+    "verify:local": "npm run verify:oss && npm run type-check && npm run build",
     "test:smoke": "node scripts/playwright-smoke.mjs"
   },
   "dependencies": {
+    "@lucide/vue": "^1.17.0",
     "vue": "^3.5.30",
     "vue-router": "^4.5.1"
   },

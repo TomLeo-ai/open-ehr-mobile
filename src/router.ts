@@ -4,7 +4,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/home' },
   { path: '/login', component: () => import('@/views/LoginView.vue') },
   { path: '/home', component: () => import('@/views/HomeView.vue') },
-  { path: '/demo-checklist', component: () => import('@/views/DemoChecklistView.vue') },
+  { path: '/demo-checklist', component: () => import('@/views/ChecklistView.vue') },
   { path: '/apply', component: () => import('@/views/ApplyCenterView.vue') },
   { path: '/apply/on-job', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'onJob', mode: 'add' } },
   { path: '/apply/on-job/detail/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'onJob', mode: 'detail' } },

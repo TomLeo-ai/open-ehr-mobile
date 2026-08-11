@@ -1,11 +1,24 @@
 import { chromium } from 'playwright';
 import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const baseUrl = process.env.DEMO_BASE_URL || 'http://127.0.0.1:5180';
+const baseUrl =
+  process.env.SMOKE_BASE_URL ||
+  process.env.EHR_BASE_URL ||
+  process.env.DEMO_BASE_URL ||
+  'http://127.0.0.1:4180';
 const outputDir = new URL('../output/playwright/', import.meta.url);
 const outputPath = fileURLToPath(outputDir);
+const repoRoot = fileURLToPath(new URL('../', import.meta.url));
+const viteBinPath = fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url));
+const routeViewports = [
+  { name: '375x812', width: 375, height: 812 },
+  { name: '390x844', width: 390, height: 844 },
+  { name: '430x932', width: 430, height: 932 },
+];
+const interactionViewport = routeViewports[1];
 const windowsChromeCandidates = [
   process.env.PROGRAMFILES,
   process.env['PROGRAMFILES(X86)'],
@@ -18,6 +31,100 @@ const chromeExecutablePath = process.env.PLAYWRIGHT_CHROME_PATH
 
 const logProgress = (phase, name) => {
   console.error(`[smoke] ${phase}: ${name}`);
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isLocalBaseUrl = () => {
+  try {
+    const url = new URL(baseUrl);
+    return ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const canReachBaseUrl = async () => {
+  try {
+    const response = await fetch(`${baseUrl}/home`, { signal: AbortSignal.timeout(2000) });
+    return response.status >= 200 && response.status < 500;
+  } catch {
+    return false;
+  }
+};
+
+let previewProcess;
+let previewOutput = '';
+
+const stopPreview = () => {
+  if (!previewProcess || previewProcess.killed) {
+    return;
+  }
+  previewProcess.kill();
+};
+
+const waitForPreview = async () => {
+  for (let index = 0; index < 40; index += 1) {
+    if (await canReachBaseUrl()) {
+      return;
+    }
+    await sleep(500);
+  }
+  throw new Error(`Preview server did not become ready at ${baseUrl}.\n${previewOutput.slice(-1200)}`);
+};
+
+const startPreviewIfNeeded = async () => {
+  if (await canReachBaseUrl()) {
+    logProgress('preview', `reuse ${baseUrl}`);
+    return;
+  }
+
+  if (!isLocalBaseUrl()) {
+    throw new Error(`Smoke base URL is not reachable: ${baseUrl}`);
+  }
+
+  if (!existsSync(viteBinPath)) {
+    throw new Error('Vite binary is missing. Run npm install before smoke testing.');
+  }
+
+  const url = new URL(baseUrl);
+  const port = url.port || '4180';
+  const host = url.hostname === 'localhost' ? '127.0.0.1' : url.hostname.replace(/^\[|\]$/g, '');
+
+  logProgress('preview', `start ${baseUrl}`);
+  previewProcess = spawn(
+    process.execPath,
+    [viteBinPath, 'preview', '--host', host, '--port', port],
+    {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
+  );
+
+  previewProcess.stdout.on('data', (chunk) => {
+    const text = chunk.toString();
+    previewOutput += text;
+    console.error(`[preview] ${text.trimEnd()}`);
+  });
+
+  previewProcess.stderr.on('data', (chunk) => {
+    const text = chunk.toString();
+    previewOutput += text;
+    console.error(`[preview] ${text.trimEnd()}`);
+  });
+
+  process.once('exit', stopPreview);
+  process.once('SIGINT', () => {
+    stopPreview();
+    process.exit(130);
+  });
+  process.once('SIGTERM', () => {
+    stopPreview();
+    process.exit(143);
+  });
+
+  await waitForPreview();
 };
 
 const routes = [
@@ -140,7 +247,7 @@ const clickFlows = [
   {
     name: 'approval-list-to-detail',
     start: '/approval/todo',
-    selector: '.approval-view__list .demo-list-card',
+    selector: '.approval-view__list .approval-view__item',
     expectedPath: '/approval/detail/todo-001',
   },
   {
@@ -246,19 +353,19 @@ const clickFlows = [
   {
     name: 'bottom-nav-home-to-apply',
     start: '/home',
-    selector: '.demo-shell__tab[href="/apply"]',
+    selector: '.app-shell__tab[href="/apply"]',
     expectedPath: '/apply',
   },
   {
     name: 'bottom-nav-apply-to-approval',
     start: '/apply',
-    selector: '.demo-shell__tab[href="/approval"]',
+    selector: '.app-shell__tab[href="/approval"]',
     expectedPath: '/approval/todo',
   },
   {
     name: 'bottom-nav-approval-to-self-service',
     start: '/approval/todo',
-    selector: '.demo-shell__tab[href="/self-service"]',
+    selector: '.app-shell__tab[href="/self-service"]',
     expectedPath: '/self-service',
   },
   {
@@ -282,19 +389,19 @@ const clickFlows = [
   {
     name: 'approval-done-card-to-detail',
     start: '/approval/done',
-    selector: '.approval-view__list .demo-list-card',
+    selector: '.approval-view__list .approval-view__item',
     expectedPath: '/approval/detail/done-001',
   },
   {
     name: 'approval-my-process-card-to-detail',
     start: '/approval/my-process',
-    selector: '.approval-view__list .demo-list-card',
+    selector: '.approval-view__list .approval-view__item',
     expectedPath: '/approval/detail/process-001',
   },
   {
     name: 'approval-draft-card-to-detail',
     start: '/approval/draft',
-    selector: '.approval-view__list .demo-list-card',
+    selector: '.approval-view__list .approval-view__item',
     expectedPath: '/approval/detail/draft-001',
   },
   {
@@ -457,7 +564,8 @@ const interactions = [
       await page.locator('.attendance-view__item').first().click();
       await page.getByRole('dialog').waitFor({ timeout: 3000 });
       await page.getByRole('button', { name: '发起异常申请' }).click();
-      await page.getByText('已进入考勤异常申请').waitFor({ timeout: 3000 });
+      await page.waitForURL('**/apply/attendance-exception', { timeout: 10000 });
+      await page.getByText('考勤异常申请').first().waitFor({ timeout: 3000 });
     },
   },
   {
@@ -467,6 +575,8 @@ const interactions = [
       await page.getByRole('button', { name: '调休' }).click();
       await page.getByRole('button', { name: '刷新余额' }).click();
       await page.getByText('假期余额已刷新').waitFor({ timeout: 3000 });
+      await page.getByRole('button', { name: '模拟发起休假申请' }).click();
+      await page.getByText('已创建休假申请模拟记录').waitFor({ timeout: 3000 });
     },
   },
   {
@@ -506,7 +616,7 @@ const interactions = [
     name: 'form-attachment-preview-toast',
     path: '/apply/on-job/detail/CERT-20260601-001',
     run: async (page) => {
-      await page.locator('.demo-form-page__attachment').first().click();
+      await page.locator('.form-page__attachment').first().click();
       await page.getByText(/预览附件/).waitFor({ timeout: 3000 });
     },
   },
@@ -576,8 +686,8 @@ const interactions = [
       await page.getByRole('link', { name: '家庭/紧急联系人' }).click();
       await page.waitForURL('**/self-service/profile/family', { timeout: 10000 });
       await page.locator('.profile-view__tab--active').getByText('家庭/紧急联系人').waitFor({ timeout: 3000 });
-      await page.getByRole('button', { name: '申请变更' }).click();
-      await page.getByText('已发起信息变更申请').waitFor({ timeout: 3000 });
+      await page.getByRole('button', { name: '模拟申请变更' }).click();
+      await page.getByText('已创建档案变更模拟记录').waitFor({ timeout: 3000 });
     },
   },
   {
@@ -594,10 +704,60 @@ const interactions = [
     name: 'back-from-approval-detail-to-approval-list',
     path: '/approval/done',
     run: async (page) => {
-      await page.locator('.approval-view__list .demo-list-card').first().click();
+      await page.locator('.approval-view__list .approval-view__item').first().click();
       await page.waitForURL('**/approval/detail/done-001', { timeout: 10000 });
       await page.getByLabel('返回').click();
       await page.waitForURL('**/approval/done', { timeout: 10000 });
+    },
+  },
+  {
+    name: 'approval-detail-matches-list-business-data',
+    path: '/approval/done',
+    run: async (page) => {
+      const cases = [
+        {
+          listPath: '/approval/done',
+          detailPath: '/approval/detail/done-001',
+          expectedTexts: ['在职/收入证明申请', 'CERT-20260601-001'],
+        },
+        {
+          listPath: '/approval/my-process',
+          detailPath: '/approval/detail/process-001',
+          expectedTexts: ['示例市居住证积分办理申请', 'RESIDE-20260601-001'],
+        },
+        {
+          listPath: '/approval/draft',
+          detailPath: '/approval/detail/draft-001',
+          expectedTexts: ['离职申请草稿', 'OFFBOARD-20260601-001'],
+        },
+      ];
+
+      for (const item of cases) {
+        await gotoFresh(page, item.listPath);
+        await page.locator('.approval-view__list .approval-view__item').first().click();
+        await page.waitForURL(`**${item.detailPath}`, { timeout: 10000 });
+        for (const text of item.expectedTexts) {
+          await page.getByText(text, { exact: false }).first().waitFor({ timeout: 3000 });
+        }
+      }
+    },
+  },
+  {
+    name: 'approval-action-syncs-list-status',
+    path: '/approval/todo',
+    run: async (page) => {
+      const firstCard = page.locator('.approval-view__list .approval-view__item').first();
+      await firstCard.getByText('考勤异常申请审批').waitFor({ timeout: 3000 });
+      await firstCard.click();
+      await page.waitForURL('**/approval/detail/todo-001', { timeout: 10000 });
+      await page.getByRole('button', { name: '同意', exact: true }).click();
+      await page.getByText('审批已同意，列表状态已更新').waitFor({ timeout: 3000 });
+      await page.locator('.approval-detail__hero .demo-tag').getByText('已同意', { exact: true }).waitFor({ timeout: 3000 });
+      await page.getByLabel('返回').click();
+      await page.waitForURL('**/approval/todo', { timeout: 10000 });
+      const syncedCard = page.locator('.approval-view__list .approval-view__item').first();
+      await syncedCard.getByText('考勤异常申请审批').waitFor({ timeout: 3000 });
+      await syncedCard.locator('.demo-tag').getByText('已同意', { exact: true }).waitFor({ timeout: 3000 });
     },
   },
   {
@@ -680,14 +840,11 @@ const isolatedInteractions = [
   },
 ];
 
+await startPreviewIfNeeded();
+
 const browser = await chromium.launch({
   headless: true,
   ...(chromeExecutablePath ? { executablePath: chromeExecutablePath } : {}),
-});
-
-const page = await browser.newPage({
-  viewport: { width: 390, height: 844 },
-  isMobile: true,
 });
 
 const consoleErrors = [];
@@ -722,7 +879,14 @@ const configurePage = (targetPage) => {
   attachDiagnostics(targetPage);
 };
 
-configurePage(page);
+const createMobilePage = async (viewport = interactionViewport) => {
+  const targetPage = await browser.newPage({
+    viewport: { width: viewport.width, height: viewport.height },
+    isMobile: true,
+  });
+  configurePage(targetPage);
+  return targetPage;
+};
 
 await mkdir(outputDir, { recursive: true });
 
@@ -732,45 +896,67 @@ const gotoFresh = async (targetPage, path) => {
   await targetPage.reload({ waitUntil: 'networkidle' });
 };
 
+const getRouteScreenshotName = (route, viewport) => `${route.name}-route-${viewport.name}.png`;
+
 const routeResults = [];
-for (const route of routes) {
-  logProgress('route', route.path);
-  await gotoFresh(page, route.path);
-  const result = await page.evaluate(() => {
-    const text = document.body.innerText.trim();
-    const fixedActions = document.querySelector('.demo-form-page__actions');
-    const fields = [...document.querySelectorAll('.demo-form-page__field')];
-    const lastField = fields.at(-1);
-    let actionOverlap = false;
+const routePage = await createMobilePage(routeViewports[0]);
+try {
+  for (const viewport of routeViewports) {
+    await routePage.setViewportSize({ width: viewport.width, height: viewport.height });
 
-    if (fixedActions && lastField) {
-      const actionRect = fixedActions.getBoundingClientRect();
-      const fieldRect = lastField.getBoundingClientRect();
-      actionOverlap = fieldRect.bottom > actionRect.top && fieldRect.top < actionRect.bottom;
+    for (const route of routes) {
+      logProgress('route', `${viewport.name} ${route.path}`);
+      await gotoFresh(routePage, route.path);
+      const result = await routePage.evaluate(() => {
+        const text = document.body.innerText.trim();
+        const fixedActions = document.querySelector('.form-page__actions');
+        const fields = [...document.querySelectorAll('.form-page__field')];
+        const lastField = fields.at(-1);
+        let actionOverlap = false;
+
+        if (fixedActions && lastField) {
+          const actionRect = fixedActions.getBoundingClientRect();
+          const fieldRect = lastField.getBoundingClientRect();
+          actionOverlap = fieldRect.bottom > actionRect.top && fieldRect.top < actionRect.bottom;
+        }
+
+        const scrollWidth = Math.max(
+          document.documentElement.scrollWidth,
+          document.body?.scrollWidth ?? 0
+        );
+
+        return {
+          textLength: text.length,
+          sample: text.slice(0, 80),
+          overflow: scrollWidth > window.innerWidth + 1,
+          scrollWidth,
+          innerWidth: window.innerWidth,
+          actionOverlap,
+        };
+      });
+
+      const screenshotName = getRouteScreenshotName(route, viewport);
+      const screenshotPath = fileURLToPath(new URL(screenshotName, outputDir));
+      await routePage.screenshot({
+        path: screenshotPath,
+        fullPage: true,
+      });
+
+      routeResults.push({
+        route: route.path,
+        viewport: viewport.name,
+        viewportWidth: viewport.width,
+        viewportHeight: viewport.height,
+        screenshot: `${outputPath}${screenshotName}`,
+        ...result,
+      });
     }
-
-    return {
-      textLength: text.length,
-      sample: text.slice(0, 80),
-      overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-      scrollWidth: document.documentElement.scrollWidth,
-      innerWidth: window.innerWidth,
-      actionOverlap,
-    };
-  });
-
-  const screenshotPath = fileURLToPath(new URL(`${route.name}.png`, outputDir));
-  await page.screenshot({
-    path: screenshotPath,
-    fullPage: true,
-  });
-
-  routeResults.push({
-    route: route.path,
-    screenshot: `${outputPath}${route.name}.png`,
-    ...result,
-  });
+  }
+} finally {
+  await routePage.close();
 }
+
+const page = await createMobilePage(interactionViewport);
 
 const clickResults = [];
 for (const flow of clickFlows) {
@@ -832,11 +1018,7 @@ for (const interaction of interactions) {
 
 for (const interaction of isolatedInteractions) {
   logProgress('isolated', interaction.name);
-  const isolatedPage = await browser.newPage({
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-  });
-  configurePage(isolatedPage);
+  const isolatedPage = await createMobilePage(interactionViewport);
 
   try {
     await gotoFresh(isolatedPage, interaction.path);
@@ -858,7 +1040,9 @@ for (const interaction of isolatedInteractions) {
   }
 }
 
+await page.close();
 await browser.close();
+stopPreview();
 
 const failedRoutes = routeResults.filter((item) => item.textLength === 0 || item.overflow || item.actionOverlap);
 const failedClicks = clickResults.filter((item) => !item.passed);
@@ -871,6 +1055,8 @@ const report = {
   interactionResults,
   consoleErrors,
   summary: {
+    routePathCount: routes.length,
+    routeViewportCount: routeViewports.length,
     routeCount: routeResults.length,
     clickFlowCount: clickResults.length,
     interactionCount: interactionResults.length,

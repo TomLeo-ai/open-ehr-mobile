@@ -1,6 +1,6 @@
-export type DemoTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
+export type Tone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
-export interface DemoField {
+export interface FieldDefinition {
   label: string;
   value: string;
   key?: string;
@@ -13,63 +13,73 @@ export interface DemoField {
   visibleWhen?: string;
 }
 
-export interface DemoSection {
+export interface FormSection {
   title: string;
   desc?: string;
   badge?: string;
-  fields: DemoField[];
+  fields: FieldDefinition[];
 }
 
-export interface DemoAttachment {
+export interface AttachmentItem {
   name: string;
   size: string;
   status: string;
   desc?: string;
 }
 
-export interface DemoModeLink {
+export interface FormModeLink {
   label: string;
   path: string;
   mode: 'add' | 'detail' | 'reissue';
 }
 
-export interface DemoApplicationForm {
+export interface ApplicationForm {
   title: string;
   summary: string;
   status: string;
-  tone: DemoTone;
+  tone: Tone;
   source: string;
   processNo: string;
   currentNode: string;
   applicant: string;
-  modeLinks: DemoModeLink[];
-  sections: DemoSection[];
-  attachments: DemoAttachment[];
+  modeLinks: FormModeLink[];
+  sections: FormSection[];
+  attachments: AttachmentItem[];
 }
 
-export interface DemoTimelineItem {
+export interface TimelineItem {
   title: string;
   desc: string;
   time: string;
   status?: string;
-  tone?: DemoTone;
+  tone?: Tone;
 }
 
-export interface DemoListItem {
+export interface ApprovalDetailState {
+  title: string;
+  status: string;
+  applicant: string;
+  node: string;
+  fields: FieldDefinition[];
+  attachments: AttachmentItem[];
+  timeline: TimelineItem[];
+}
+
+export interface ApprovalListItem {
   id: string;
   title: string;
   desc: string;
   meta: string;
   status: string;
-  tone: DemoTone;
+  tone: Tone;
 }
 
-export interface DemoChecklistItem {
+export interface ChecklistItem {
   title: string;
   path: string;
   module: string;
   focus: string;
   status: string;
-  tone: DemoTone;
+  tone: Tone;
   screenshot: string;
 }

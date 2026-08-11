@@ -1,9 +1,9 @@
 <template>
-  <dl class="demo-field-list">
-    <div v-for="field in fields" :key="field.label" class="demo-field-list__row">
+  <dl class="field-list">
+    <div v-for="field in fields" :key="field.label" class="field-list__row">
       <dt>
         {{ field.label }}
-        <span v-if="field.required" class="demo-field-list__required">*</span>
+        <span v-if="field.required" class="field-list__required">*</span>
       </dt>
       <dd>{{ field.value }}</dd>
     </div>
@@ -12,56 +12,57 @@
 
 <script setup lang="ts">
 import type { PropType } from 'vue';
-import type { DemoField } from '@/data/types';
+import type { FieldDefinition } from '@/data/types';
 
-defineOptions({ name: 'DemoFieldList' });
+defineOptions({ name: 'FieldList' });
 
 defineProps({
   fields: {
-    type: Array as PropType<DemoField[]>,
+    type: Array as PropType<FieldDefinition[]>,
     required: true,
   },
 });
 </script>
 
 <style scoped>
-.demo-field-list {
+.field-list {
   display: grid;
   gap: 10px;
   margin: 0;
 }
 
-.demo-field-list__row {
+.field-list__row {
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr);
-  gap: var(--demo-space-3);
+  gap: var(--ehr-space-3);
   align-items: start;
-  border-radius: var(--demo-radius-md);
-  background: var(--demo-color-surface-muted);
+  border: 1px solid rgba(214, 226, 223, 0.74);
+  border-radius: var(--ehr-radius-lg);
+  background: var(--ehr-color-surface-raised);
   padding: 10px 12px;
 }
 
 dt {
-  color: var(--demo-color-text-tertiary);
+  color: var(--ehr-color-ink-muted);
   font-size: 13px;
 }
 
 dd {
   min-width: 0;
   margin: 0;
-  color: var(--demo-color-text);
+  color: var(--ehr-color-ink);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 800;
   text-align: right;
   overflow-wrap: anywhere;
 }
 
-.demo-field-list__required {
-  color: #a95650;
+.field-list__required {
+  color: var(--ehr-color-error);
 }
 
 @media (max-width: 360px) {
-  .demo-field-list__row {
+  .field-list__row {
     grid-template-columns: 1fr;
     gap: 4px;
   }

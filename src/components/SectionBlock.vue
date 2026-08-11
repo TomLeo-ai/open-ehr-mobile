@@ -1,6 +1,6 @@
 <template>
-  <section v-if="kind === 'section'" class="demo-block demo-card">
-    <header class="demo-block__header">
+  <section v-if="kind === 'section'" class="section-block">
+    <header class="section-block__header">
       <div>
         <h2 class="demo-section-title">{{ title }}</h2>
         <p v-if="desc" class="demo-section-desc">{{ desc }}</p>
@@ -10,13 +10,13 @@
     <slot />
   </section>
 
-  <article v-else class="demo-block demo-muted-card">
+  <article v-else class="section-block demo-muted-card">
     <slot />
   </article>
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'DemoBlocks' });
+defineOptions({ name: 'SectionBlock' });
 
 defineProps({
   kind: {
@@ -35,15 +35,19 @@ defineProps({
 </script>
 
 <style scoped>
-.demo-block {
-  padding: var(--demo-space-4);
+.section-block {
+  min-width: 0;
 }
 
-.demo-block__header {
+.section-block__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--demo-space-3);
-  margin-bottom: var(--demo-space-3);
+  gap: var(--ehr-space-3);
+  margin-bottom: var(--ehr-space-3);
+}
+
+.section-block__header > div {
+  min-width: 0;
 }
 </style>

@@ -1,0 +1,42 @@
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+
+const routes: RouteRecordRaw[] = [
+  { path: '/', redirect: '/home' },
+  { path: '/login', component: () => import('@/views/LoginView.vue') },
+  { path: '/home', component: () => import('@/views/HomeView.vue') },
+  { path: '/demo-checklist', component: () => import('@/views/ChecklistView.vue') },
+  { path: '/apply', component: () => import('@/views/ApplyCenterView.vue') },
+  { path: '/apply/on-job', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'onJob', mode: 'add' } },
+  { path: '/apply/on-job/detail/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'onJob', mode: 'detail' } },
+  { path: '/apply/on-job/reissue/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'onJob', mode: 'reissue' } },
+  { path: '/apply/recommend-reward', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'recommend', mode: 'add' } },
+  { path: '/apply/recommend-reward/detail/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'recommend', mode: 'detail' } },
+  { path: '/apply/recommend-reward/reissue/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'recommend', mode: 'reissue' } },
+  { path: '/apply/settle', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'settle', mode: 'add' } },
+  { path: '/apply/settle/detail/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'settle', mode: 'detail' } },
+  { path: '/apply/settle/reissue/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'settle', mode: 'reissue' } },
+  { path: '/apply/attendance-exception', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'attendance', mode: 'add' } },
+  { path: '/apply/attendance-exception/detail/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'attendance', mode: 'detail' } },
+  { path: '/apply/attendance-exception/reissue/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'attendance', mode: 'reissue' } },
+  { path: '/apply/resignation', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'resignation', mode: 'add' } },
+  { path: '/apply/resignation/detail/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'resignation', mode: 'detail' } },
+  { path: '/apply/resignation/reissue/:id', component: () => import('@/views/FormRouteView.vue'), props: { formKey: 'resignation', mode: 'reissue' } },
+  { path: '/approval', redirect: '/approval/todo' },
+  { path: '/approval/:tab(todo|done|my-process|draft)', component: () => import('@/views/ApprovalView.vue'), props: true },
+  { path: '/approval/detail/:processInstanceId', component: () => import('@/views/ApprovalDetailView.vue') },
+  { path: '/self-service', component: () => import('@/views/SelfServiceView.vue') },
+  { path: '/self-service/profile', component: () => import('@/views/ProfileView.vue') },
+  { path: '/self-service/profile/:group(career|family|qualification|finance)', component: () => import('@/views/ProfileView.vue'), props: true },
+  { path: '/self-service/salary', component: () => import('@/views/SalaryView.vue') },
+  { path: '/self-service/attendance', component: () => import('@/views/AttendanceView.vue') },
+  { path: '/self-service/vacation', component: () => import('@/views/VacationView.vue') },
+  { path: '/self-service/cancellation', component: () => import('@/views/CancellationView.vue') },
+  { path: '/self-service/summary-result', component: () => import('@/views/SummaryResultView.vue') },
+  { path: '/self-service/contact-book', component: () => import('@/views/ContactBookView.vue') },
+  { path: '/:pathMatch(.*)*', redirect: '/home' },
+];
+
+export default createRouter({
+  history: createWebHistory(),
+  routes,
+});

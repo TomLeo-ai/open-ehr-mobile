@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题 / Security Issue
+    url: https://github.com/TomLeo-ai/open-ehr-mobile/security/policy
+    about: 安全问题请按照安全策略通过私有渠道报告，不要在公开 Issue 中披露敏感信息。

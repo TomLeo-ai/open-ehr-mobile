@@ -4,6 +4,8 @@ Open EHR Mobile 是一个面向企业 HR 数字化、移动端员工自助、申
 
 本项目中的 EHR 指 Enterprise / Employee HR 场景，不是医疗领域的 openEHR 标准项目。当前版本保持纯前端 mock，不包含后端服务，不连接真实企业微信，不接入真实 HR 数据，也不提供生产环境集成能力。
 
+**在线演示 / Live Demo：** [https://open-ehr-mobile.vercel.app](https://open-ehr-mobile.vercel.app)
+
 ## 适用场景
 
 1. HR 数字化方案演示：快速展示移动端员工工作台、流程申请、审批处理和自助查询。
@@ -39,7 +41,15 @@ Open EHR Mobile 是一个面向企业 HR 数字化、移动端员工自助、申
 
 ## 在线与本地演示
 
-当前仓库默认只提供本地演示，不内置线上部署地址。
+公开演示由 Vercel 托管，无需账号即可体验纯前端 mock 流程：
+
+- 在线首页：[https://open-ehr-mobile.vercel.app](https://open-ehr-mobile.vercel.app)
+- 登录入口：[https://open-ehr-mobile.vercel.app/login](https://open-ehr-mobile.vercel.app/login)
+- 业务导览：[https://open-ehr-mobile.vercel.app/demo-checklist](https://open-ehr-mobile.vercel.app/demo-checklist)
+
+建议使用移动设备访问，或在桌面浏览器中切换到移动设备视图。演示中的人员、薪资、考勤和审批数据均为虚构 mock 数据。
+
+如需本地运行：
 
 ```shell
 npm install
